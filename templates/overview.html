@@ -1,0 +1,101 @@
+{% extends "layout.html" %}
+{% from "macros.html" import playlist_card %}
+
+{% block content %}
+<header class="flex justify-between items-center mb-8">
+  <h1 class="text-3xl font-bold text-green-400">Spotify Dashboard</h1>
+  <span class="text-lg">Welcome, <span class="text-green-300">{{ user_profile.display_name }}</span></span>
+  <a href="{{ url_for('auth.logout') }}" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-full">Logout</a>
+</header>
+
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+  
+  <!-- Playlists -->
+  <section class="bg-gray-800 p-4 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-green-300 mb-3">My Playlists</h2>
+    {% if playlists %}
+      {% for p in playlists %}{{ playlist_card(p) }}{% endfor %}
+    {% else %}
+      <p class="text-gray-400">No playlists found.</p>
+    {% endif %}
+  </section>
+
+  <!-- Top Artists -->
+  <section class="bg-gray-800 p-4 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-green-300 mb-3">Top Artists</h2>
+    {% if top_artists %}
+      {% for a in top_artists %}
+        <div class="flex items-center space-x-4 p-2 hover:bg-gray-700 rounded-lg">
+          <img src="{{ a.images[0].url }}" alt="{{ a.name }}" class="w-12 h-12 rounded-full">
+          <span>{{ a.name }}</span>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-gray-400">No top artists found.</p>
+    {% endif %}
+  </section>
+
+  <!-- Top Tracks -->
+  <section class="bg-gray-800 p-4 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-green-300 mb-3">Top Tracks</h2>
+    {% if top_tracks %}
+      {% for t in top_tracks %}
+        <div class="flex items-center space-x-4 p-2 hover:bg-gray-700 rounded-lg">
+          <img src="{{ t.album.images[0].url }}" alt="{{ t.name }}" class="w-12 h-12 rounded-full">
+          <div>
+            <p>{{ t.name }}</p>
+            <p class="text-sm text-gray-400">{{ t.artists[0].name }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-gray-400">No top tracks found.</p>
+    {% endif %}
+  </section>
+
+  <!-- Recently Played -->
+  <section class="bg-gray-800 p-4 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-green-300 mb-3">Recently Played</h2>
+    {% if recently_played %}
+      {% for item in recently_played %}
+        <div class="flex items-center space-x-4 p-2 hover:bg-gray-700 rounded-lg">
+          <img src="{{ item.track.album.images[0].url }}" alt="{{ item.track.name }}" class="w-12 h-12 rounded-full">
+          <div>
+            <p>{{ item.track.name }}</p>
+            <p class="text-sm text-gray-400">{{ item.track.artists[0].name }}</p>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <p class="text-gray-400">No recently played tracks.</p>
+    {% endif %}
+  </section>
+
+  <!-- Search -->
+  <section class="bg-gray-800 p-4 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-green-300 mb-3">Search</h2>
+    <div class="flex flex-col gap-3">
+      <input id="search-input" type="text" placeholder="Search..." class="p-2 rounded bg-gray-700">
+      <select id="search-type" class="p-2 rounded bg-gray-700">
+        <option value="track">Track</option>
+        <option value="artist">Artist</option>
+      </select>
+      <button id="search-btn" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded">Search</button>
+    </div>
+    <div id="search-results" class="mt-4 space-y-3 text-sm text-gray-300"></div>
+  </section>
+
+  <!-- Music Controls -->
+  <section class="bg-gray-800 p-4 rounded-lg shadow flex flex-col items-center">
+    <h2 class="text-xl font-semibold text-green-300 mb-3">Controls</h2>
+    <div class="flex space-x-4">
+      <button id="prev-btn" class="bg-gray-700 px-3 py-2 rounded-full"><i class="fas fa-backward"></i></button>
+      <button id="play-btn" class="bg-green-500 px-3 py-2 rounded-full"><i class="fas fa-play"></i></button>
+      <button id="pause-btn" class="bg-green-500 px-3 py-2 rounded-full"><i class="fas fa-pause"></i></button>
+      <button id="next-btn" class="bg-gray-700 px-3 py-2 rounded-full"><i class="fas fa-forward"></i></button>
+    </div>
+  </section>
+
+</div>
+{% endblock %}

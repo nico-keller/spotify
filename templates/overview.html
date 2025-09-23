@@ -3,55 +3,178 @@
 
 {% block content %}
 <header class="flex justify-between items-center mb-8">
-  <h1 class="text-3xl font-bold text-green-400">Spotify Dashboard</h1>
-  <span class="text-lg">Welcome, <span class="text-green-300">{{ user_profile.display_name }}</span></span>
+  <h1 class="text-3xl font-bold text-green-400">Spotify Stats by NK</h1>
+  <span class="text-lg">Welcome, <span class="text-green-300">{{ user_profile.display_name }}</span>!</span>
   <a href="{{ url_for('auth.logout') }}" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-full">Logout</a>
 </header>
 
+<!-- Time Period Selector -->
+<div class="mb-6 bg-gray-800 p-4 rounded-lg shadow">
+  <h2 class="text-xl font-semibold text-green-300 mb-3">Time Period</h2>
+  <h3 class="text-xl font-semibold text-green-300 mb-3">Choose a time period to reflect your stats</h3>
+  <div class="flex space-x-4">
+    <button onclick="changeTerm('4_weeks')"
+            class="term-btn px-4 py-2 rounded-lg transition-colors {{ 'bg-green-500 text-white' if current_term == '4_weeks' else 'bg-gray-700 hover:bg-gray-600 text-gray-300' }}">
+      Last 4 Weeks
+    </button>
+    <button onclick="changeTerm('6_months')"
+            class="term-btn px-4 py-2 rounded-lg transition-colors {{ 'bg-green-500 text-white' if current_term == '6_months' else 'bg-gray-700 hover:bg-gray-600 text-gray-300' }}">
+      Last 6 Months
+    </button>
+    <button onclick="changeTerm('lifetime')"
+            class="term-btn px-4 py-2 rounded-lg transition-colors {{ 'bg-green-500 text-white' if current_term == 'lifetime' else 'bg-gray-700 hover:bg-gray-600 text-gray-300' }}">
+      All Time
+    </button>
+  </div>
+</div>
 
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-  
-  <!-- Playlists -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+
+  <!-- Top Genres -->
   <section class="bg-gray-800 p-4 rounded-lg shadow">
-    <h2 class="text-xl font-semibold text-green-300 mb-3">My Playlists</h2>
-    {% if playlists %}
-      {% for p in playlists %}{{ playlist_card(p) }}{% endfor %}
-    {% else %}
-      <p class="text-gray-400">No playlists found.</p>
-    {% endif %}
+    <h2 class="text-xl font-semibold text-green-300 mb-3">Top Genres</h2>
+    <div class="max-h-80 overflow-y-auto">
+      {% if top_genres %}
+        {% for genre in top_genres %}
+          <div class="flex justify-between items-center p-2 hover:bg-gray-700 rounded-lg">
+            <span class="capitalize">{{ genre.name }}</span>
+            <span class="text-sm text-gray-400 bg-gray-700 px-2 py-1 rounded">{{ genre.count }}</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-gray-400">No genres found.</p>
+      {% endif %}
+    </div>
   </section>
 
   <!-- Top Artists -->
   <section class="bg-gray-800 p-4 rounded-lg shadow">
     <h2 class="text-xl font-semibold text-green-300 mb-3">Top Artists</h2>
-    {% if top_artists %}
-      {% for a in top_artists %}
-        <div class="flex items-center space-x-4 p-2 hover:bg-gray-700 rounded-lg">
-          <img src="{{ a.images[0].url }}" alt="{{ a.name }}" class="w-12 h-12 rounded-full">
-          <span>{{ a.name }}</span>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-gray-400">No top artists found.</p>
-    {% endif %}
+    <div class="max-h-80 overflow-y-auto">
+      {% if top_artists %}
+        {% for a in top_artists[:20] %}
+          <div class="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded-lg">
+            {% if a.images %}
+              <img src="{{ a.images[0].url }}" alt="{{ a.name }}" class="w-10 h-10 rounded-full object-cover">
+            {% else %}
+              <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
+                <i class="fas fa-user text-gray-400"></i>
+              </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+              <p class="truncate">{{ a.name }}</p>
+              {% if a.genres %}
+                <p class="text-xs text-gray-400 truncate">{{ a.genres[0] }}</p>
+              {% endif %}
+            </div>
+            <span class="text-xs text-gray-500">#{{ loop.index }}</span>
+          </div>
+        {% endfor %}
+        {% if top_artists|length > 20 %}
+          <button onclick="toggleShowMore('artists')" id="show-more-artists" class="w-full mt-2 text-sm text-green-400 hover:text-green-300">
+            Show More ({{ top_artists|length - 20 }} remaining)
+          </button>
+          <div id="more-artists" class="hidden">
+            {% for a in top_artists[20:] %}
+              <div class="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded-lg">
+                {% if a.images %}
+                  <img src="{{ a.images[0].url }}" alt="{{ a.name }}" class="w-10 h-10 rounded-full object-cover">
+                {% else %}
+                  <div class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-gray-400"></i>
+                  </div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                  <p class="truncate">{{ a.name }}</p>
+                  {% if a.genres %}
+                    <p class="text-xs text-gray-400 truncate">{{ a.genres[0] }}</p>
+                  {% endif %}
+                </div>
+                <span class="text-xs text-gray-500">#{{ loop.index + 20 }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="text-gray-400">No top artists found.</p>
+      {% endif %}
+    </div>
   </section>
 
   <!-- Top Tracks -->
   <section class="bg-gray-800 p-4 rounded-lg shadow">
     <h2 class="text-xl font-semibold text-green-300 mb-3">Top Tracks</h2>
-    {% if top_tracks %}
-      {% for t in top_tracks %}
-        <div class="flex items-center space-x-4 p-2 hover:bg-gray-700 rounded-lg">
-          <img src="{{ t.album.images[0].url }}" alt="{{ t.name }}" class="w-12 h-12 rounded-full">
-          <div>
-            <p>{{ t.name }}</p>
-            <p class="text-sm text-gray-400">{{ t.artists[0].name }}</p>
+    <div class="max-h-80 overflow-y-auto">
+      {% if top_tracks %}
+        {% for t in top_tracks[:20] %}
+          <div class="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded-lg">
+            {% if t.album.images %}
+              <img src="{{ t.album.images[0].url }}" alt="{{ t.name }}" class="w-10 h-10 rounded object-cover">
+            {% else %}
+              <div class="w-10 h-10 bg-gray-700 rounded flex items-center justify-center">
+                <i class="fas fa-music text-gray-400"></i>
+              </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+              <p class="truncate">{{ t.name }}</p>
+              <p class="text-xs text-gray-400 truncate">{{ t.artists[0].name }}</p>
+            </div>
+            <span class="text-xs text-gray-500">#{{ loop.index }}</span>
           </div>
-        </div>
-      {% endfor %}
-    {% else %}
-      <p class="text-gray-400">No top tracks found.</p>
-    {% endif %}
+        {% endfor %}
+        {% if top_tracks|length > 20 %}
+          <button onclick="toggleShowMore('tracks')" id="show-more-tracks" class="w-full mt-2 text-sm text-green-400 hover:text-green-300">
+            Show More ({{ top_tracks|length - 20 }} remaining)
+          </button>
+          <div id="more-tracks" class="hidden">
+            {% for t in top_tracks[20:] %}
+              <div class="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded-lg">
+                {% if t.album.images %}
+                  <img src="{{ t.album.images[0].url }}" alt="{{ t.name }}" class="w-10 h-10 rounded object-cover">
+                {% else %}
+                  <div class="w-10 h-10 bg-gray-700 rounded flex items-center justify-center">
+                    <i class="fas fa-music text-gray-400"></i>
+                  </div>
+                {% endif %}
+                <div class="flex-1 min-w-0">
+                  <p class="truncate">{{ t.name }}</p>
+                  <p class="text-xs text-gray-400 truncate">{{ t.artists[0].name }}</p>
+                </div>
+                <span class="text-xs text-gray-500">#{{ loop.index + 20 }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% else %}
+        <p class="text-gray-400">No top tracks found.</p>
+      {% endif %}
+    </div>
+  </section>
+
+  <!-- Playlists -->
+  <section class="bg-gray-800 p-4 rounded-lg shadow">
+    <h2 class="text-xl font-semibold text-green-300 mb-3">My Playlists</h2>
+    <div class="max-h-80 overflow-y-auto">
+      {% if playlists %}
+        {% for p in playlists %}
+          <div class="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded-lg">
+            {% if p.images %}
+              <img src="{{ p.images[0].url }}" alt="{{ p.name }}" class="w-12 h-12 rounded object-cover">
+            {% else %}
+              <div class="w-12 h-12 bg-gray-700 flex items-center justify-center rounded text-gray-400">
+                <i class="fa-solid fa-compact-disc"></i>
+              </div>
+            {% endif %}
+            <div class="flex-1 min-w-0">
+              <p class="truncate font-medium">{{ p.name }}</p>
+              <p class="text-xs text-gray-400">{{ p.tracks.total }} tracks</p>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p class="text-gray-400">No playlists found.</p>
+      {% endif %}
+    </div>
   </section>
 
   <!-- Recently Played -->
@@ -59,11 +182,11 @@
     <h2 class="text-xl font-semibold text-green-300 mb-3">Recently Played</h2>
     {% if recently_played %}
       {% for item in recently_played %}
-        <div class="flex items-center space-x-4 p-2 hover:bg-gray-700 rounded-lg">
-          <img src="{{ item.track.album.images[0].url }}" alt="{{ item.track.name }}" class="w-12 h-12 rounded-full">
-          <div>
-            <p>{{ item.track.name }}</p>
-            <p class="text-sm text-gray-400">{{ item.track.artists[0].name }}</p>
+        <div class="flex items-center space-x-3 p-2 hover:bg-gray-700 rounded-lg">
+          <img src="{{ item.track.album.images[0].url }}" alt="{{ item.track.name }}" class="w-10 h-10 rounded object-cover">
+          <div class="flex-1 min-w-0">
+            <p class="truncate">{{ item.track.name }}</p>
+            <p class="text-xs text-gray-400 truncate">{{ item.track.artists[0].name }}</p>
           </div>
         </div>
       {% endfor %}
@@ -76,26 +199,57 @@
   <section class="bg-gray-800 p-4 rounded-lg shadow">
     <h2 class="text-xl font-semibold text-green-300 mb-3">Search</h2>
     <div class="flex flex-col gap-3">
-      <input id="search-input" type="text" placeholder="Search..." class="p-2 rounded bg-gray-700">
-      <select id="search-type" class="p-2 rounded bg-gray-700">
+      <input id="search-input" type="text" placeholder="Search..." class="p-2 rounded bg-gray-700 text-white">
+      <select id="search-type" class="p-2 rounded bg-gray-700 text-white">
         <option value="track">Track</option>
         <option value="artist">Artist</option>
       </select>
-      <button id="search-btn" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded">Search</button>
+      <button id="search-btn" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded transition-colors">Search</button>
     </div>
-    <div id="search-results" class="mt-4 space-y-3 text-sm text-gray-300"></div>
+    <div id="search-results" class="mt-4 space-y-2 text-sm text-gray-300 max-h-60 overflow-y-auto"></div>
   </section>
 
   <!-- Music Controls -->
   <section class="bg-gray-800 p-4 rounded-lg shadow flex flex-col items-center">
     <h2 class="text-xl font-semibold text-green-300 mb-3">Controls</h2>
-    <div class="flex space-x-4">
-      <button id="prev-btn" class="bg-gray-700 px-3 py-2 rounded-full"><i class="fas fa-backward"></i></button>
-      <button id="play-btn" class="bg-green-500 px-3 py-2 rounded-full"><i class="fas fa-play"></i></button>
-      <button id="pause-btn" class="bg-green-500 px-3 py-2 rounded-full"><i class="fas fa-pause"></i></button>
-      <button id="next-btn" class="bg-gray-700 px-3 py-2 rounded-full"><i class="fas fa-forward"></i></button>
+    <div class="flex space-x-3">
+      <button id="prev-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
+        <i class="fas fa-backward"></i>
+      </button>
+      <button id="play-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
+        <i class="fas fa-play"></i>
+      </button>
+      <button id="pause-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
+        <i class="fas fa-pause"></i>
+      </button>
+      <button id="next-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
+        <i class="fas fa-forward"></i>
+      </button>
     </div>
   </section>
 
 </div>
+
+<script>
+function changeTerm(term) {
+  // Update URL with new term parameter and reload
+  const url = new URL(window.location);
+  url.searchParams.set('term', term);
+  window.location.href = url.toString();
+}
+
+function toggleShowMore(type) {
+  const moreSection = document.getElementById(`more-${type}`);
+  const button = document.getElementById(`show-more-${type}`);
+
+  if (moreSection.classList.contains('hidden')) {
+    moreSection.classList.remove('hidden');
+    button.textContent = 'Show Less';
+  } else {
+    moreSection.classList.add('hidden');
+    button.textContent = `Show More`;
+  }
+}
+</script>
+
 {% endblock %}

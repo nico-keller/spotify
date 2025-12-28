@@ -80,6 +80,27 @@ def search():
         return api_error(str(e))
 
 
+@dashboard_bp.route("/me/player", methods=["GET"])
+@spotify_required
+def now_playing():
+    sp = g.spotify
+    try:
+        current_playback = sp.current_playback()
+        if current_playback and current_playback.get('item'):
+            track = current_playback['item']
+            return api_success({
+                'is_playing': current_playback['is_playing'],
+                'track_name': track['name'],
+                'artist_name': track['artists'][0]['name'],
+                'album_image': track['album']['images'][0]['url'] if track['album']['images'] else None,
+                'progress_ms': current_playback['progress_ms'],
+                'duration_ms': track['duration_ms']
+            })
+        else:
+            return api_success({'is_playing': False, 'track_name': None})
+    except Exception as e:
+        return api_error(str(e))
+
 @dashboard_bp.route("/player/play", methods=["POST"])
 @spotify_required
 def play():

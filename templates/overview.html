@@ -209,24 +209,46 @@
     <div id="search-results" class="mt-4 space-y-2 text-sm text-gray-300 max-h-60 overflow-y-auto"></div>
   </section>
 
-  <!-- Music Controls -->
-  <section class="bg-gray-800 p-4 rounded-lg shadow flex flex-col items-center">
-    <h2 class="text-xl font-semibold text-green-300 mb-3">Controls</h2>
-    <div class="flex space-x-3">
-      <button id="prev-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
-        <i class="fas fa-backward"></i>
-      </button>
-      <button id="play-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
-        <i class="fas fa-play"></i>
-      </button>
-      <button id="pause-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
-        <i class="fas fa-pause"></i>
-      </button>
-      <button id="next-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
-        <i class="fas fa-forward"></i>
-      </button>
+<!-- Music Controls -->
+<section class="bg-gray-800 p-4 rounded-lg shadow flex flex-col items-center">
+  <h2 class="text-xl font-semibold text-green-300 mb-3">Controls</h2>
+
+  <!-- Now Playing Preview -->
+  <div id="now-playing" class="w-full mb-4 p-3 bg-gray-700 rounded-lg">
+    <div id="now-playing-content" class="flex items-center space-x-3">
+      <img id="track-image" src="" alt="Album art" class="w-12 h-12 rounded object-cover hidden">
+      <div class="flex-1 min-w-0">
+        <p id="track-name" class="truncate text-sm font-medium text-gray-400">No track playing</p>
+        <p id="artist-name" class="truncate text-xs text-gray-500"></p>
+      </div>
     </div>
-  </section>
+    <!-- Progress Bar -->
+    <div class="mt-2">
+      <div class="flex justify-between text-xs text-gray-500 mb-1">
+        <span id="progress-time">0:00</span>
+        <span id="duration-time">0:00</span>
+      </div>
+      <div class="w-full bg-gray-600 rounded-full h-1">
+        <div id="progress-bar" class="bg-green-500 h-1 rounded-full transition-all" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex space-x-3">
+    <button id="prev-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
+      <i class="fas fa-backward"></i>
+    </button>
+    <button id="play-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
+      <i class="fas fa-play"></i>
+    </button>
+    <button id="pause-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
+      <i class="fas fa-pause"></i>
+    </button>
+    <button id="next-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
+      <i class="fas fa-forward"></i>
+    </button>
+  </div>
+</section>
 
 </div>
 
@@ -250,6 +272,61 @@ function toggleShowMore(type) {
     button.textContent = `Show More`;
   }
 }
+
+// Format milliseconds to MM:SS
+function formatTime(ms) {
+  const minutes = Math.floor(ms / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+// Update now playing information
+async function updateNowPlaying() {
+  try {
+    const response = await fetch('/me/player');
+    const data = await response.json();
+
+    if (data.success && data.data.is_playing) {
+      const track = data.data;
+
+      // Update track info
+      document.getElementById('track-name').textContent = track.track_name;
+      document.getElementById('track-name').classList.remove('text-gray-400');
+      document.getElementById('track-name').classList.add('text-white');
+      document.getElementById('artist-name').textContent = track.artist_name;
+
+      // Update album art
+      const trackImage = document.getElementById('track-image');
+      if (track.album_image) {
+        trackImage.src = track.album_image;
+        trackImage.classList.remove('hidden');
+      } else {
+        trackImage.classList.add('hidden');
+      }
+
+      // Update progress bar
+      const progress = (track.progress_ms / track.duration_ms) * 100;
+      document.getElementById('progress-bar').style.width = `${progress}%`;
+      document.getElementById('progress-time').textContent = formatTime(track.progress_ms);
+      document.getElementById('duration-time').textContent = formatTime(track.duration_ms);
+
+    } else {
+      // No track playing
+      document.getElementById('track-name').textContent = 'No track playing';
+      document.getElementById('track-name').classList.add('text-gray-400');
+      document.getElementById('track-name').classList.remove('text-white');
+      document.getElementById('artist-name').textContent = '';
+      document.getElementById('track-image').classList.add('hidden');
+      document.getElementById('progress-bar').style.width = '0%';
+    }
+  } catch (error) {
+    console.error('Error fetching now playing:', error);
+  }
+}
+
+// Update now playing every 5 seconds
+updateNowPlaying();
+setInterval(updateNowPlaying, 5000);
 </script>
 
 {% endblock %}

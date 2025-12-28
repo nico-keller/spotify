@@ -238,11 +238,8 @@
     <button id="prev-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
       <i class="fas fa-backward"></i>
     </button>
-    <button id="play-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
+    <button id="play-pause-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
       <i class="fas fa-play"></i>
-    </button>
-    <button id="pause-btn" class="bg-green-500 hover:bg-green-600 p-3 rounded-full transition-colors">
-      <i class="fas fa-pause"></i>
     </button>
     <button id="next-btn" class="bg-gray-700 hover:bg-gray-600 p-3 rounded-full transition-colors">
       <i class="fas fa-forward"></i>
@@ -280,53 +277,125 @@ function formatTime(ms) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+// Track current playback state
+let isPlaying = false;
+
 // Update now playing information
 async function updateNowPlaying() {
   try {
     const response = await fetch('/me/player');
     const data = await response.json();
 
-    if (data.success && data.data.is_playing) {
+    if (data.success && data.data.is_playing !== undefined) {
       const track = data.data;
+      isPlaying = track.is_playing;
 
-      // Update track info
-      document.getElementById('track-name').textContent = track.track_name;
-      document.getElementById('track-name').classList.remove('text-gray-400');
-      document.getElementById('track-name').classList.add('text-white');
-      document.getElementById('artist-name').textContent = track.artist_name;
+      // Update play/pause button icon
+      const playPauseBtn = document.getElementById('play-pause-btn');
+      const icon = playPauseBtn.querySelector('i');
 
-      // Update album art
-      const trackImage = document.getElementById('track-image');
-      if (track.album_image) {
-        trackImage.src = track.album_image;
-        trackImage.classList.remove('hidden');
+      if (isPlaying) {
+        icon.classList.remove('fa-play');
+        icon.classList.add('fa-pause');
       } else {
-        trackImage.classList.add('hidden');
+        icon.classList.remove('fa-pause');
+        icon.classList.add('fa-play');
       }
 
-      // Update progress bar
-      const progress = (track.progress_ms / track.duration_ms) * 100;
-      document.getElementById('progress-bar').style.width = `${progress}%`;
-      document.getElementById('progress-time').textContent = formatTime(track.progress_ms);
-      document.getElementById('duration-time').textContent = formatTime(track.duration_ms);
+      if (track.track_name) {
+        // Update track info
+        document.getElementById('track-name').textContent = track.track_name;
+        document.getElementById('track-name').classList.remove('text-gray-400');
+        document.getElementById('track-name').classList.add('text-white');
+        document.getElementById('artist-name').textContent = track.artist_name;
 
-    } else {
-      // No track playing
-      document.getElementById('track-name').textContent = 'No track playing';
-      document.getElementById('track-name').classList.add('text-gray-400');
-      document.getElementById('track-name').classList.remove('text-white');
-      document.getElementById('artist-name').textContent = '';
-      document.getElementById('track-image').classList.add('hidden');
-      document.getElementById('progress-bar').style.width = '0%';
+        // Update album art
+        const trackImage = document.getElementById('track-image');
+        if (track.album_image) {
+          trackImage.src = track.album_image;
+          trackImage.classList.remove('hidden');
+        } else {
+          trackImage.classList.add('hidden');
+        }
+
+        // Update progress bar
+        const progress = (track.progress_ms / track.duration_ms) * 100;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+        document.getElementById('progress-time').textContent = formatTime(track.progress_ms);
+        document.getElementById('duration-time').textContent = formatTime(track.duration_ms);
+      } else {
+        // No track info but we have playback state
+        document.getElementById('track-name').textContent = 'No track playing';
+        document.getElementById('track-name').classList.add('text-gray-400');
+        document.getElementById('track-name').classList.remove('text-white');
+        document.getElementById('artist-name').textContent = '';
+        document.getElementById('track-image').classList.add('hidden');
+        document.getElementById('progress-bar').style.width = '0%';
+      }
     }
   } catch (error) {
     console.error('Error fetching now playing:', error);
   }
 }
 
-// Update now playing every 5 seconds
+// Toggle play/pause
+async function togglePlayPause() {
+  const endpoint = isPlaying ? '/player/pause' : '/player/play';
+
+  try {
+    const response = await fetch(endpoint, { method: 'POST' });
+    const data = await response.json();
+
+    if (data.success) {
+      // Update immediately for better UX
+      isPlaying = !isPlaying;
+      const icon = document.getElementById('play-pause-btn').querySelector('i');
+
+      if (isPlaying) {
+        icon.classList.remove('fa-play');
+        icon.classList.add('fa-pause');
+      } else {
+        icon.classList.remove('fa-pause');
+        icon.classList.add('fa-play');
+      }
+
+      // Fetch updated state
+      setTimeout(updateNowPlaying, 500);
+    }
+  } catch (error) {
+    console.error('Error toggling playback:', error);
+  }
+}
+
+// Previous track
+async function previousTrack() {
+  try {
+    await fetch('/player/previous', { method: 'POST' });
+    setTimeout(updateNowPlaying, 500);
+  } catch (error) {
+    console.error('Error skipping to previous track:', error);
+  }
+}
+
+// Next track
+async function nextTrack() {
+  try {
+    await fetch('/player/next', { method: 'POST' });
+    setTimeout(updateNowPlaying, 500);
+  } catch (error) {
+    console.error('Error skipping to next track:', error);
+  }
+}
+
+// Add event listeners
+document.getElementById('play-pause-btn').addEventListener('click', togglePlayPause);
+document.getElementById('prev-btn').addEventListener('click', previousTrack);
+document.getElementById('next-btn').addEventListener('click', nextTrack);
+
+// Update now playing every 2 seconds
 updateNowPlaying();
-setInterval(updateNowPlaying, 5000);
+setInterval(updateNowPlaying, 2000);
 </script>
+
 
 {% endblock %}
